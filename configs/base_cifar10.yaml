@@ -2,7 +2,7 @@ experiment_name: baseline
 seed: 42
 
 data:
-  image_folder: ~/data/cifar10-images
+  image_folder: /root/autodl-tmp/denoising-diffusion-pytorch/data/cifar10-images
   image_size: 32
 
 model:

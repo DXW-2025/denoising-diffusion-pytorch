@@ -88,7 +88,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--config", required=True)
     p.add_argument("--run-dir", required=True)
-    p.add_argument("--base-config", default=str(ROOT / "configs" / "base.yaml"))
+    p.add_argument("--base-config", default=str(ROOT / "configs" / "celeba.yaml"))
     p.add_argument("--resume", type=int, default=None, help="从 model-{N}.pt 续训（N 是 milestone）")
     p.add_argument("--max-steps", type=int, default=None, help="覆盖 train_num_steps（记录进 config.resolved.yaml）")
     args = p.parse_args()

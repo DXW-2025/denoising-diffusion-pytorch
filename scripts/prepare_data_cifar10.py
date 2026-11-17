@@ -21,8 +21,7 @@ def main():
     root, out = Path(args.root).expanduser(), Path(args.out).expanduser()
     out.mkdir(parents=True, exist_ok=True)
     datasets.CIFAR10.url = (
-    "https://obs.dualstack.cn-north-4.myhuaweicloud.com/"
-    "mindspore-website/notebook/datasets/cifar-10-python.tar.gz")
+    "https://pypi.tuna.tsinghua.edu.cn/mirrors/pytorch-data/cifar-10-python.tar.gz")
     ds = datasets.CIFAR10(root=str(root), train=True, download=True)
     n = len(ds) if args.limit is None else min(args.limit, len(ds))
 

@@ -1,0 +1,42 @@
+experiment_name: celeba128_baseline
+seed: 42
+
+data:
+  # 对应前面镜像下载脚本导出的图片目录
+  image_folder: /root/autodl-tmp/denoising-diffusion-pytorch/data/celeba-train-128
+  image_size: 128
+
+model:
+  dim: 64
+  dim_mults: [1, 2, 4, 8]
+
+diffusion:
+  # 训练使用 1000 个扩散时间步
+  timesteps: 1000
+
+  # 当前代码会使用 DDIM 进行 50 步采样
+  sampling_timesteps: 50
+
+  objective: pred_noise
+  beta_schedule: cosine
+
+training:
+  # 单卡有效 batch size = 8 × 4 = 32
+  train_batch_size: 32
+  gradient_accumulate_every: 4
+
+  train_lr: 0.00008
+  train_num_steps: 100000
+
+  ema_decay: 0.995
+  ema_update_every: 10
+
+  # 每 2000 步保存模型和生成图片
+  save_and_sample_every: 2000
+  num_samples: 25
+
+  amp: true
+
+  # 首轮关闭 FID，避免评估耗时过长
+  calculate_fid: false
+  num_fid_samples: 50000

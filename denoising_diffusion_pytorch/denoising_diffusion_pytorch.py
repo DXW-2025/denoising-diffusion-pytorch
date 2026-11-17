@@ -971,7 +971,7 @@ class Trainer:
             self.ema.to(self.device)
 
         self.results_folder = Path(results_folder)
-        self.results_folder.mkdir(exist_ok = True)
+        self.results_folder.mkdir(parents=True, exist_ok=True)
 
         # step counter state
 
@@ -1012,13 +1012,16 @@ class Trainer:
 
         self.save_best_and_latest_only = save_best_and_latest_only
         self.writer = None
-        if tensorboard_dir is not None:
+        if tensorboard_dir is not None and self.accelerator.is_main_process:
             from torch.utils.tensorboard import SummaryWriter
             self.writer = SummaryWriter(log_dir=tensorboard_dir)
 
         self.metrics_jsonl = metrics_jsonl  # str/Path，None 则不写
+        if metrics_jsonl is not None and self.accelerator.is_main_process:
+            Path(metrics_jsonl).parent.mkdir(parents=True, exist_ok=True)
 
-        if log_file is not None:
+        if log_file is not None and self.accelerator.is_main_process:
+            Path(log_file).parent.mkdir(parents=True, exist_ok=True)
             import logging
             logging.basicConfig(
                 level=logging.INFO,
@@ -1088,13 +1091,13 @@ class Trainer:
 
                     self.accelerator.backward(loss)
                 if self.writer is not None:
-                    self.writer.add_scalar('train/loss', loss.item(), self.step)
-                if self.metrics_jsonl is not None:
+                    self.writer.add_scalar('train/loss', total_loss, self.step)
+                if self.metrics_jsonl is not None and accelerator.is_main_process:
                     import json
                     with open(self.metrics_jsonl, "a", encoding="utf-8") as f:
                         f.write(json.dumps({
                         "global_step": self.step,
-                        "loss": float(loss.detach().cpu()),
+                        "loss": total_loss,
                         "learning_rate": self.opt.param_groups[0]["lr"],
                         }, allow_nan=False) + "\n")
                         
@@ -1122,6 +1125,19 @@ class Trainer:
 
                         all_images = torch.cat(all_images_list, dim = 0)
 
+                        if self.writer is not None:
+                            grid = utils.make_grid(
+                                all_images.detach().float().cpu().clamp(0, 1),
+                                nrow=int(math.sqrt(self.num_samples)),
+                                padding=2,
+                            )
+                            self.writer.add_image(
+                                "samples/ema", grid,
+                                global_step=self.step,
+                                dataformats="CHW",
+                            )
+                            self.writer.flush()
+
                         utils.save_image(all_images, str(self.results_folder / f'sample-{milestone}.png'), nrow = int(math.sqrt(self.num_samples)))
 
                         # whether to calculate fid
@@ -1139,5 +1155,9 @@ class Trainer:
                             self.save(milestone)
 
                 pbar.update(1)
+
+        if self.writer is not None:
+            self.writer.flush()
+            self.writer.close()
 
         accelerator.print('training complete')
