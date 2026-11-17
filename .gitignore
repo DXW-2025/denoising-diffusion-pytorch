@@ -132,3 +132,14 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+/data
+# 数据与产物（不进 git）
+cifar10-raw/
+cifar10-images*/
+results/
+experiments/
+*.pt
+*.png
+*.log
+events.out.tfevents.*

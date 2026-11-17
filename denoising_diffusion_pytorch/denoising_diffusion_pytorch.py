@@ -909,7 +909,10 @@ class Trainer:
         inception_block_idx = 2048,
         max_grad_norm = 1.,
         num_fid_samples = 50000,
-        save_best_and_latest_only = False
+        save_best_and_latest_only = False,
+        tensorboard_dir=None,
+        metrics_jsonl=None,
+        log_file=None
     ):
         super().__init__()
 
@@ -1008,6 +1011,22 @@ class Trainer:
             self.best_fid = 1e10 # infinite
 
         self.save_best_and_latest_only = save_best_and_latest_only
+        self.writer = None
+        if tensorboard_dir is not None:
+            from torch.utils.tensorboard import SummaryWriter
+            self.writer = SummaryWriter(log_dir=tensorboard_dir)
+
+        self.metrics_jsonl = metrics_jsonl  # str/Path，None 则不写
+
+        if log_file is not None:
+            import logging
+            logging.basicConfig(
+                level=logging.INFO,
+                format="%(asctime)s %(levelname)s %(message)s",
+                handlers=[logging.FileHandler(log_file, encoding="utf-8"),
+                  logging.StreamHandler()],
+            ) 
+            logging.info("run started")
 
     @property
     def device(self):
@@ -1068,7 +1087,17 @@ class Trainer:
                         total_loss += loss.item()
 
                     self.accelerator.backward(loss)
-
+                if self.writer is not None:
+                    self.writer.add_scalar('train/loss', loss.item(), self.step)
+                if self.metrics_jsonl is not None:
+                    import json
+                    with open(self.metrics_jsonl, "a", encoding="utf-8") as f:
+                        f.write(json.dumps({
+                        "global_step": self.step,
+                        "loss": float(loss.detach().cpu()),
+                        "learning_rate": self.opt.param_groups[0]["lr"],
+                        }, allow_nan=False) + "\n")
+                        
                 pbar.set_description(f'loss: {total_loss:.4f}')
 
                 accelerator.wait_for_everyone()

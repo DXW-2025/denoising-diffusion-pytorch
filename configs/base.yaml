@@ -1,0 +1,29 @@
+experiment_name: baseline
+seed: 42
+
+data:
+  image_folder: ~/data/cifar10-images
+  image_size: 32
+
+model:
+  dim: 64
+  dim_mults: [1, 2, 4, 8]
+
+diffusion:
+  timesteps: 1000
+  sampling_timesteps: 50
+  objective: pred_noise        # 经典 DDPM 基线；仓库默认是 pred_v
+  beta_schedule: linear        # 经典 DDPM 基线；仓库默认是 sigmoid
+
+training:
+  train_batch_size: 32
+  gradient_accumulate_every: 1
+  train_lr: 0.00008
+  train_num_steps: 100000      # 先跑通；追求质量再上调到 300k~700k
+  ema_decay: 0.995
+  ema_update_every: 10
+  save_and_sample_every: 5000
+  num_samples: 25              # 必须是平方数
+  amp: true
+  calculate_fid: false         # 第一轮关掉，FID 单独做
+  num_fid_samples: 50000
